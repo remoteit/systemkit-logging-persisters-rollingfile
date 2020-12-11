@@ -95,10 +95,12 @@ func (thisRef *fileLogger) closeCurrentAndCreateNext() {
 		thisRef.file, err = os.Create(nextFileName)
 	} else {
 		thisRef.file, err = os.OpenFile(nextFileName, os.O_WRONLY|os.O_APPEND, 0660)
-		fileInfo, _ := thisRef.file.Stat()
-		if fileInfo.Size() >= int64(thisRef.rotationConfig.MaxSize) {
-			thisRef.file.Truncate(0)
-			thisRef.file.Sync()
+		if err != nil {
+			fileInfo, err := thisRef.file.Stat()
+			if err != nil && fileInfo.Size() >= int64(thisRef.rotationConfig.MaxSize) {
+				thisRef.file.Truncate(0)
+				thisRef.file.Sync()
+			}
 		}
 	}
 	if err != nil && thisRef.errorWriter != nil {
