@@ -52,16 +52,17 @@ func NewFileLoggerWithRotation(fileName string, errorWriter io.Writer, rotation 
 
 // Log - implement `logging.CoreLogger` interface
 func (thisRef *fileLogger) Log(logEntry logging.LogEntry) logging.LogEntry {
+	bytesToWrite := []byte(logEntry.Message + "\n")
+
 	if thisRef.errorOccurred && thisRef.errorWriter != nil {
-		thisRef.errorWriter.Write([]byte(logEntry.Message + "\n"))
+		thisRef.errorWriter.Write(bytesToWrite)
 	} else {
 		if thisRef.rotationTotalWrittenBytes > thisRef.rotationConfig.MaxSize {
 			thisRef.closeCurrentAndCreateNext()
 		}
 
-		thisRef.file.WriteString(logEntry.Message + "\n")
-		thisRef.rotationTotalWrittenBytes += len(logEntry.Message)
-
+		thisRef.file.Write(bytesToWrite)
+		thisRef.rotationTotalWrittenBytes += len(bytesToWrite)
 	}
 
 	return logEntry
