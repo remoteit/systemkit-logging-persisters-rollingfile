@@ -29,7 +29,7 @@ func TestSimple(t *testing.T) {
 }
 
 func Test_10MB(t *testing.T) {
-	size := 1048576 * 10 // 10 MB
+	var size int64 = 1048576 // * 10 // 10 MB
 
 	l := rollingfile.NewFileLoggerWithCustomRotationCustomNameEasy("test.log", rollingfile.Rotation{
 		Count:   5, // 5 files
@@ -38,7 +38,8 @@ func Test_10MB(t *testing.T) {
 
 	for i := 0; i < 7; i++ {
 		fmt.Println("i=", i)
-		for j := 0; j < size; j++ {
+		var j int64
+		for j = 0; j < size; j++ {
 			l.Info("")
 		}
 	}

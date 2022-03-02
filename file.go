@@ -12,8 +12,8 @@ import (
 
 // Rotation -
 type Rotation struct {
-	Count   int `json:"count"`   // nr of files
-	MaxSize int `json:"maxSize"` // max file size before move to next one
+	Count   int   `json:"count"`   // nr of files
+	MaxSize int64 `json:"maxSize"` // max file size before move to next one
 }
 
 // NewDefaultRotation -
@@ -32,7 +32,7 @@ type fileLogger struct {
 	rotationConfig            Rotation
 	rotationInitialFileName   string
 	rotationFileIndex         int
-	rotationTotalWrittenBytes int
+	rotationTotalWrittenBytes int64
 }
 
 // NewFileLoggerWithRotation -
@@ -62,7 +62,7 @@ func (thisRef *fileLogger) Log(logEntry logging.LogEntry) logging.LogEntry {
 		}
 
 		thisRef.file.Write(bytesToWrite)
-		thisRef.rotationTotalWrittenBytes += len(bytesToWrite)
+		thisRef.rotationTotalWrittenBytes += int64(len(bytesToWrite))
 	}
 
 	return logEntry
@@ -97,8 +97,16 @@ func (thisRef *fileLogger) closeCurrentAndCreateNext() {
 	} else {
 		thisRef.file, err = os.OpenFile(nextFileName, os.O_WRONLY|os.O_APPEND, 0660)
 		if err == nil {
-			thisRef.file.Truncate(0)
-			thisRef.file.Sync()
+			fileInfo, err := thisRef.file.Stat()
+			if err == nil && fileInfo != nil {
+				fileSize := fileInfo.Size()
+				if fileSize < thisRef.rotationConfig.MaxSize {
+					thisRef.rotationTotalWrittenBytes = fileSize
+				} else {
+					thisRef.file.Truncate(0)
+					thisRef.file.Sync()
+				}
+			}
 		}
 	}
 	if err != nil && thisRef.errorWriter != nil {
